@@ -23,7 +23,8 @@ final class FavoriteDetailView extends LinearLayout {
     private final EditText story;
     private final ZoomPhotoView photo;
     private String dateValue="时间读取中…",placeValue="地点读取中…";
-    private boolean disposed, exporting;
+    private boolean disposed, exporting, manualPlace, metadataReady;
+    private AlertDialog placeDialog;
     private Bitmap ownedImage;
     private final Runnable changed;
     FavoriteDetailView(Context c,MainActivity.PhotoItem item,SharedPreferences prefs,boolean light,Runnable close,Runnable remove,Runnable changed){
@@ -34,7 +35,7 @@ final class FavoriteDetailView extends LinearLayout {
         View save=new DownloadButton(c);nav.addView(save,new LayoutParams(dp(48),dp(48)));back.setOnClickListener(v->{persist();close.run();});save.setOnClickListener(v->savePage());
         LinearLayout paper=new LinearLayout(c);paper.setOrientation(VERTICAL);paper.setPadding(dp(14),dp(14),dp(14),dp(12));paper.setBackground(paperBackground());paper.setElevation(dp(4));addView(paper,new LayoutParams(-1,0,1));
         photo=new ZoomPhotoView(c);paper.addView(photo,new LayoutParams(-1,0,1));
-        date=text(dateValue,11,0xFF78674F);place=text(placeValue,11,0xFF78674F);date.setPadding(0,dp(10),0,dp(3));paper.addView(date);paper.addView(place);place.setOnClickListener(v->{if(c instanceof MainActivity)((MainActivity)c).requestPhotoLocation();});
+        date=text(dateValue,11,0xFF78674F);place=text(placeValue,11,0xFF78674F);date.setPadding(0,dp(10),0,dp(3));paper.addView(date);paper.addView(place,new LayoutParams(-1,-2));place.setMinHeight(dp(32));place.setGravity(Gravity.CENTER_VERTICAL);place.setOnClickListener(v->{if(manualPlace)editPlace();else if(c instanceof MainActivity)((MainActivity)c).requestPhotoLocation();});
         View line=new View(c);line.setBackgroundColor(0xFFDDCFB4);LayoutParams lp=new LayoutParams(-1,dp(1));lp.topMargin=dp(12);paper.addView(line,lp);
         story=new EditText(c);story.setTextColor(0xFF514332);story.setTextSize(14);story.setHintTextColor(0xFFA49275);story.setHint(MemoryNotes.HINT);story.setBackgroundColor(Color.TRANSPARENT);story.setPadding(0,dp(12),0,dp(3));story.setMaxLines(3);story.setMinLines(2);
         story.setFilters(new InputFilter[]{(source,start,end,dest,dstart,dend)->{
@@ -60,14 +61,44 @@ final class FavoriteDetailView extends LinearLayout {
     private GradientDrawable paperBackground(){GradientDrawable b=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xFFD1C1A3,0xFFF9F3E5,0xFFF3E8D3});b.setCornerRadius(dp(4));b.setStroke(dp(1),0xFFCCB993);return b;}
     private void updateCount(){String s=story.getText().toString();count.setText(s.codePointCount(0,s.length())+" / 40");}
     private void persist(){MemoryNotes.save(prefs,item.identity(),story.getText().toString());changed.run();}
-    void content(Bitmap b,String time,String location){if(disposed){if(b!=null)b.recycle();return;}ownedImage=b;photo.setImage(b);dateValue=time;placeValue=location;date.setText(time);place.setText(location);}
-    void location(String text){if(disposed)return;placeValue=text;place.setText(text);}
-    void dispose(){if(disposed)return;persist();disposed=true;photo.setImage(null);releaseImage();}
+    void content(Bitmap b,String time,String location){content(b,time,location,false);}
+    void content(Bitmap b,String time,String location,boolean editable){
+        if(disposed){if(b!=null)b.recycle();return;}ownedImage=b;photo.setImage(b);dateValue=time;date.setText(time);
+        manualPlace=editable;metadataReady=true;
+        placeValue=editable?MemoryNotes.getPlace(prefs,item.identity()):location;showPlace();
+    }
+    private void showPlace(){
+        place.setText(manualPlace?(placeValue.isEmpty()?"地点未填写 · 点击填写地点":placeValue):placeValue);
+        place.setContentDescription(manualPlace?"编辑地点，"+(placeValue.isEmpty()?"未填写":placeValue):placeValue);
+    }
+    private void editPlace(){
+        if(disposed||!manualPlace||placeDialog!=null)return;
+        EditText input=new EditText(getContext());input.setSingleLine(true);input.setTextSize(16);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        input.setHint("填写拍摄地点");input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(200)});
+        input.setText(placeValue);input.setSelection(input.length());
+        LinearLayout box=new LinearLayout(getContext());box.setPadding(dp(20),dp(8),dp(20),0);box.addView(input,new LayoutParams(-1,-2));
+        AlertDialog dialog=new AlertDialog.Builder(getContext()).setTitle("编辑地点").setView(box)
+                .setNegativeButton("取消",null).setPositiveButton("保存",null).create();placeDialog=dialog;
+        dialog.setOnDismissListener(d->{if(placeDialog==dialog)placeDialog=null;});
+        dialog.setOnShowListener(d->{
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+                String value=MemoryNotes.cleanPlace(input.getText().toString());
+                if(!MemoryNotes.savePlace(prefs,item.identity(),value)){Toast.makeText(getContext(),"地点保存失败，请重试",Toast.LENGTH_SHORT).show();return;}
+                placeValue=value;showPlace();changed.run();dialog.dismiss();
+            });
+            input.requestFocus();
+        });
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE|WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        dialog.show();
+    }
+    void location(String text){if(disposed||manualPlace)return;placeValue=text;showPlace();}
+    void dispose(){if(disposed)return;persist();disposed=true;if(placeDialog!=null)placeDialog.dismiss();photo.setImage(null);releaseImage();}
     private synchronized void releaseImage(){if(disposed&&!exporting&&ownedImage!=null){ownedImage.recycle();ownedImage=null;}}
     private void savePage(){
         if(exporting)return;
         if(photo.image()==null){Toast.makeText(getContext(),"照片尚未读取完成",Toast.LENGTH_SHORT).show();return;}
-        if(dateValue.contains("读取中")||placeValue.contains("读取中")||placeValue.contains("解析中")){Toast.makeText(getContext(),"时间地点正在读取，请稍后保存",Toast.LENGTH_SHORT).show();return;}
+        if(!metadataReady){Toast.makeText(getContext(),"时间地点正在读取，请稍后保存",Toast.LENGTH_SHORT).show();return;}
         persist();final String note=story.getText().toString().trim(),when=dateValue,where=placeValue;final Bitmap original=photo.image();exporting=true;status.setText("正在保存…");
         new Thread(()->{
             Uri uri=null;File legacyFile=null;Bitmap output=null;boolean ok=false;
@@ -86,14 +117,16 @@ final class FavoriteDetailView extends LinearLayout {
     static Bitmap renderExport(Bitmap image,String time,String place,String story){
         int width=1080,pad=66;float fit=Math.min((width-pad*2f)/image.getWidth(),1400f/image.getHeight());int imageH=Math.round(image.getHeight()*fit);
         TextPaint tp=new TextPaint(Paint.ANTI_ALIAS_FLAG);tp.setColor(0xFF756249);tp.setTextSize(29);
-        StaticLayout where=new StaticLayout(place,tp,width-pad*2,Layout.Alignment.ALIGN_NORMAL,1.15f,0,false);
+        StaticLayout where=place==null||place.trim().isEmpty()?null:new StaticLayout(place,tp,width-pad*2,Layout.Alignment.ALIGN_NORMAL,1.15f,0,false);
+        int placeHeight=where==null?0:where.getHeight();
         TextPaint notePaint=new TextPaint(tp);notePaint.setTextSize(39);notePaint.setColor(0xFF54442F);
         StaticLayout memory=new StaticLayout(story,notePaint,width-pad*2,Layout.Alignment.ALIGN_NORMAL,1.25f,0,false);
-        int h=pad+imageH+40+40+where.getHeight()+36+(story.isEmpty()?0:memory.getHeight()+28)+pad;
+        int h=pad+imageH+40+40+placeHeight+(where==null?16:36)+(story.isEmpty()?0:memory.getHeight()+28)+pad;
         Bitmap output=Bitmap.createBitmap(width,h,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(output);Paint p=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
         c.drawColor(0xFFC5B392);p.setColor(0xFFF5ECD9);c.drawRect(18,18,width-18,h-18,p);p.setColor(0x30735A36);p.setStrokeWidth(1);for(int y=20;y<h-20;y+=12)c.drawLine(20,y,width-20,y,p);
         float iw=image.getWidth()*fit;RectF dst=new RectF((width-iw)/2,pad,(width+iw)/2,pad+imageH);p.setShadowLayer(9,0,5,0x40000000);p.setColor(0xFFFFFCF4);c.drawRect(dst.left-15,dst.top-15,dst.right+15,dst.bottom+15,p);p.clearShadowLayer();c.drawBitmap(image,null,dst,p);
-        int y=pad+imageH+52;c.drawText(time,pad,y,tp);y+=20;c.save();c.translate(pad,y);where.draw(c);c.restore();y+=where.getHeight()+34;
+        int y=pad+imageH+52;c.drawText(time,pad,y,tp);y+=20;
+        if(where!=null){c.save();c.translate(pad,y);where.draw(c);c.restore();y+=placeHeight+34;}else y+=14;
         if(!story.isEmpty()){p.setColor(0xFFCCBA99);c.drawRect(pad,y,width-pad,y+2,p);y+=25;c.save();c.translate(pad,y);memory.draw(c);c.restore();}return output;
     }
 }

@@ -6,8 +6,8 @@ set -e
 
 # ---- 版本信息：改这里即可，包的版本号与文件名随之变化 ----
 # v1.x 单机；v2.x 留给未来联网功能。versionCode 只递增以支持覆盖安装。
-VERSION_CODE=24
-VERSION_NAME=1.9.14
+VERSION_CODE=25
+VERSION_NAME=1.9.15
 
 SDK="$HOME/android-dev/sdk"
 JDK="$HOME/android-dev/jdk/Contents/Home"

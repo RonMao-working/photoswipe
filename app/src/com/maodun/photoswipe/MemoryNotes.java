@@ -13,4 +13,13 @@ final class MemoryNotes {
     static String get(SharedPreferences p,String uri){return p.getString(key(uri),"");}
     static void save(SharedPreferences p,String uri,String value){p.edit().putString(key(uri),first(value,40)).commit();}
     static String excerpt(SharedPreferences p,String uri){return first(get(p,uri).trim(),10);}
+    // Manual captions are separate from geocoder cache and never write EXIF/GPS.
+    static String placeKey(String uri){return "memory-place:"+uri;}
+    static String cleanPlace(String value){return first(value==null?"":value.trim().replaceAll("[\\r\\n\\t]+"," "),200);}
+    static String getPlace(SharedPreferences p,String uri){return p.getString(placeKey(uri),"");}
+    static boolean savePlace(SharedPreferences p,String uri,String value){
+        String clean=cleanPlace(value);SharedPreferences.Editor edit=p.edit();
+        if(clean.isEmpty())edit.remove(placeKey(uri));else edit.putString(placeKey(uri),clean);
+        return edit.commit();
+    }
 }

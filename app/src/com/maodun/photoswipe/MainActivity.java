@@ -1637,7 +1637,7 @@ public class MainActivity extends Activity {
             String location=m.hasGps?(cached.isEmpty()?coordinates:cached+(cached.contains("纬度")?"":"\n"+coordinates)):(hasLocationPermission()?(m.exifRead?"原照片无GPS，无法提供经纬度":"照片位置读取失败，可重试"):"未授权照片位置信息");
             main.post(()->{
                 if(favoriteDetail!=page){if(bitmap!=null)bitmap.recycle();return;}
-                page.content(bitmap,when,location);
+                page.content(bitmap,when,location,!m.hasGps&&m.exifRead&&hasLocationPermission());
                 if(m.hasGps&&cached.isEmpty()){
                     main.postDelayed(()->{if(favoriteDetail==page)page.location(prefs.getString("place:"+item.identity(),"地点未解析 · "+PhotoPlace.coords(m.lat,m.lon)));},8000);
                     PhotoPlace.resolve(this,m.lat,m.lon,answer->{
@@ -1650,7 +1650,7 @@ public class MainActivity extends Activity {
     }
     private String detailTime(PhotoItem item,Meta m){
         if(m.dateTime!=null)try{SimpleDateFormat input=new SimpleDateFormat("yyyy:MM:dd HH:mm:ss",Locale.US);input.setLenient(false);Date date=input.parse(m.dateTime);return new SimpleDateFormat("yyyy年M月d日 HH:mm:ss",Locale.CHINA).format(date);}catch(Exception ignored){}
-        return item.dateTaken>0?new SimpleDateFormat("yyyy年M月d日 HH:mm:ss",Locale.CHINA).format(new Date(item.dateTaken))+" · 文件时间":"无拍摄时间";
+        return item.dateTaken>0?new SimpleDateFormat("yyyy年M月d日 HH:mm:ss",Locale.CHINA).format(new Date(item.dateTaken)):"无拍摄时间";
     }
     private void closeFavoriteDetail(){
         if(favoriteDetail==null)return;favoriteDetail.dispose();root.removeView(favoriteDetail);favoriteDetail=null;
