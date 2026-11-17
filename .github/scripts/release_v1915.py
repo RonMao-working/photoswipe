@@ -12,7 +12,7 @@ import urllib.parse
 REPO = 'RonMao-working/photoswipe'
 TAG = 'v1.9.15'
 NAME = '相册滑选-v1.9.15.apk'
-SOURCE = 'https://aka.doubaocdn.com/s/zsqZUcVCAE'
+SOURCE = Path('.github/release-assets/相册滑选-v1.9.15.apk')
 SHA256 = '2b32bdd132a8f437250dd7a41c88fc8e38f3cbfaf743b39a0ceba60cfdf50ee5'
 SIZE = 119832
 API = 'https://api.github.com'
@@ -37,16 +37,18 @@ def main():
                 return None
             raise RuntimeError('GitHub API request failed: HTTP ' + str(error.code)) from None
 
-    # No GitHub credential is sent to the APK storage host.
-    with urllib.request.urlopen(SOURCE, timeout=60) as response:
-        apk = response.read(SIZE + 1)
+    # Read the exact delivered APK from the repository; no external storage dependency.
+    print('Stage: verify repository APK', flush=True)
+    apk = SOURCE.read_bytes()
     if len(apk) != SIZE or hashlib.sha256(apk).hexdigest() != SHA256:
         raise SystemExit('APK size or SHA-256 mismatch; nothing published.')
     notes = Path('docs/release-notes-v1.9.15.md').read_text(encoding='utf-8')
     base = '/repos/' + REPO + '/releases'
+    print('Stage: check existing release', flush=True)
     release = request('GET', base + '/tags/' + TAG)
     if release is not None:
         raise SystemExit('A release already exists; it has not been overwritten.')
+    print('Stage: create draft release', flush=True)
     release = request('POST', base, {'tag_name': TAG, 'target_commitish': os.environ['GITHUB_SHA'],
                                    'name': '相册滑选 v1.9.15', 'body': notes, 'draft': True, 'prerelease': False})
     upload = release['upload_url'].split('{', 1)[0] + '?' + urllib.parse.urlencode({'name': NAME})
@@ -65,4 +67,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as error:
+        message = (type(error).__name__ + ': ' + str(error)).replace(os.environ.get('GITHUB_TOKEN', 'NO_TOKEN'), '[redacted]')
+        print('::error::' + message.replace('\n', ' ').replace('\r', ' '), flush=True)
+        raise SystemExit(1)
