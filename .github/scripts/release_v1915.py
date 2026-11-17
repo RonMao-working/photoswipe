@@ -53,8 +53,10 @@ def main():
     releases = request('GET', base + '?per_page=100') or []
     release = next((r for r in releases if r.get('tag_name') == TAG), None)
     if release is not None and not release.get('draft'):
-        expected = next((a for a in release.get('assets', []) if a.get('name') == NAME), None)
-        if expected and expected.get('size') == SIZE and expected.get('digest') == 'sha256:' + SHA256:
+        expected = next((a for a in release.get('assets', []) if a.get('size') == SIZE and a.get('digest') == 'sha256:' + SHA256), None)
+        if expected:
+            if expected.get('name') != 'photoswipe-v1.9.15.apk':
+                request('PATCH', base + '/assets/' + str(expected['id']), {'name': 'photoswipe-v1.9.15.apk', 'label': '相册滑选 v1.9.15 APK'})
             print('Release already verified:', release['html_url']);return
         raise SystemExit('A published release already exists; it has not been overwritten.')
     if release is None:

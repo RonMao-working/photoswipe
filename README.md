@@ -5,7 +5,7 @@
 A native Android photo triage app: swipe left to queue deletion, right to keep, and up to queue a favorite. Deletion and collection require confirmation in Settlement. No account, photo uploads, or sharing; GPS place-name lookup may use the system's network service.
 
 - 版本 / Version：**v1.9.15**（versionCode 25），minSdk 26 / targetSdk 34，竖屏 / portrait。
-- APK：**119,832 bytes**，与 v1.9.14 同签名 / same signing certificate as v1.9.14。
+- 安装包 / APK：[GitHub Release v1.9.15](https://github.com/RonMao-working/photoswipe/releases/tag/v1.9.15) → `photoswipe-v1.9.15.apk`。**119,832 bytes**，与 v1.9.14 同签名 / same signing certificate as v1.9.14。
 - 请覆盖安装，不卸载或清数据 / Install over the existing version; do not uninstall or clear app data.
 
 ## 本次更新 / What's new
