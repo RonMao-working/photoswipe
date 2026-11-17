@@ -4,24 +4,24 @@
 
 A native Android photo triage app: swipe left to queue deletion, right to keep, and up to queue a favorite. Deletion and collection require confirmation in Settlement. No account, photo uploads, or sharing; GPS place-name lookup may use the system's network service.
 
-- 版本 / Version：**v1.9.15**（versionCode 25），minSdk 26 / targetSdk 34，竖屏 / portrait。
-- 安装包 / APK：[GitHub Release v1.9.15](https://github.com/RonMao-working/photoswipe/releases/tag/v1.9.15) → `photoswipe-v1.9.15.apk`。**119,832 bytes**，与 v1.9.14 同签名 / same signing certificate as v1.9.14。
+- 版本 / Version：**v1.9.16**（versionCode 26），minSdk 26 / targetSdk 34，竖屏 / portrait。
+- 安装包 / APK：[GitHub Release v1.9.16](https://github.com/RonMao-working/photoswipe/releases/tag/v1.9.16) → `photoswipe-v1.9.16.apk`。**119,832 bytes**，与 v1.9.14 同签名 / same signing certificate as v1.9.14。
 - 请覆盖安装，不卸载或清数据 / Install over the existing version; do not uninstall or clear app data.
 
 ## 本次更新 / What's new
 
-1. **独家记忆地点可编辑**：照片位置权限已授权且 EXIF 读取成功，确认原片无 GPS 时，点击地点行可填写地点；保存后再次打开仍保留，可修改、清空或取消。手写地点仅存本地，不改原图或 GPS。
-2. **时间文案简化**：时间后不再显示“文件时间”，日期与时分秒保留。
-3. **下载内容更干净**：无 GPS 且地点未填写时，导出 PNG 不显示无 GPS 提示，也不留地点空行；填写后导出手写地点。有 GPS 的照片沿用原有地名／坐标。
+1. **收起空故事区域**：未填写独家记忆时，不在纸框内预留空输入框或字数行。保留一行点击填写入口，已有故事仍显示并自动保存。
+2. **信息等距贴底**：时间、地点、经纬度统一字体与行距，靠近纸框下边缘，保留窄边距。
+3. **下载无多余留白**：导出高度按实际照片、信息与故事计算；没有故事或只有空白字符，不留故事区域、分隔线或大片空白。保留v1.9.15手写地点和未填写地点不导出的规则。
 
-1. **Editable memory location**: once photo-location permission is granted and EXIF has been read successfully, a photo confirmed to have no GPS offers a tappable location row. Enter and save a place, reopen it later, revise it, clear it, or cancel. The caption is local only and never changes the original or GPS metadata.
-2. **Cleaner timestamp**: remove the “文件时间” (file time) suffix while keeping the date and time to the second.
-3. **Cleaner downloads**: if a no-GPS photo has no written location, the exported PNG omits the GPS-missing message and the location line's space. Written locations are included; existing GPS place names / coordinates remain unchanged.
+1. **Collapse empty story space**: an unwritten memory reserves no editor or counter inside the paper. A compact tap-to-write entry remains; written stories stay visible and auto-saved.
+2. **Consistent, bottom-aligned metadata**: time, place and coordinates share type and line spacing, ending close to the paper's bottom with narrow padding.
+3. **No excess export whitespace**: image height follows the real photo, metadata and story. Empty or whitespace-only stories leave no story area, separator or large blank region. Retains v1.9.15 manual locations and omission of unwritten locations.
 
 ## 产品概述 / Product overview
 
-- [中英双语 v1.9.15 产品概述 / Bilingual overview](docs/product-overview-v1.9.15.md)
-- [中英双语发布说明 / Bilingual release notes](docs/release-notes-v1.9.15.md)
+- [中英双语 v1.9.16 产品概述 / Bilingual overview](docs/product-overview-v1.9.16.md)
+- [中英双语发布说明 / Bilingual release notes](docs/release-notes-v1.9.16.md)
 - [v1.9.14 历史概述 / Previous overview](docs/product-overview-v1.9.14.md)
 
 ## 三个常驻 Tab / Three persistent tabs
@@ -37,12 +37,12 @@ Unconfirmed actions are not executed. Closing or changing screens does not disca
 ## 目录 / Layout
 
 ```text
-app/src/com/maodun/photoswipe/   14 个产品模块 / 14 product modules
+app/src/com/maodun/photoswipe/   15 个产品模块 / 15 product modules
 app/res/                       图标与资源 / icons and resources
 app/tests/                     专项与回归测试 / targeted and regression tests
 app/build.sh                   aapt2 → javac → d8 → zipalign → apksigner
-app/测试记录-v1.9.15.md         本版验证状态 / verification status
-app/run_instrumentation_v1915.py  API34专项入口 / API34 targeted test runner
+app/测试记录-v1.9.16.md         本版验证状态 / verification status
+app/tests/Regression1916Instrumentation.java  本版UI/PNG专项 / version-specific UI and PNG checks
 docs/                          中英双语概述与发布说明 / bilingual overview and release notes
 ```
 
@@ -56,9 +56,9 @@ Requires Android SDK `platforms/android-34`, `build-tools/34.0.0`, and a JDK cap
 bash app/build.sh
 ```
 
-输出 `安装包/相册滑选-v1.9.15.apk`。这不是 Gradle 工程，无 AndroidX 依赖。源码不含签名私钥；其他机器自动创建的签名不能覆盖原签名安装包。
+输出 `安装包/相册滑选-v1.9.16.apk`。这不是 Gradle 工程，无 AndroidX 依赖。源码不含签名私钥；其他机器自动创建的签名不能覆盖原签名安装包。
 
-Outputs `安装包/相册滑选-v1.9.15.apk`. This is not a Gradle project and has no AndroidX dependency. Signing keys are not included: a newly generated key on another machine cannot upgrade the original signed installation.
+Outputs `安装包/相册滑选-v1.9.16.apk`. This is not a Gradle project and has no AndroidX dependency. Signing keys are not included: a newly generated key on another machine cannot upgrade the original signed installation.
 
 ## 数据与风险 / Data and risk
 
@@ -71,11 +71,11 @@ Outputs `安装包/相册滑选-v1.9.15.apk`. This is not a Gradle project and h
 
 ## 验证 / Verification
 
-**v1.9.15**：构建、验签和 16 项主机 JVM 地点存储测试通过。UI / 下载专项已编译但未运行：本机 Android 模拟器被虚拟化权限阻止，未接入真机。因此地点编辑、真实公共相册下载与本版完整回归仍待验收，不沿用旧版测试数作为本版通过结果。
+**v1.9.16**：构建、验签、45项主机JVM排版检查和16项地点存储检查通过。真实UI/PNG专项已编译但未运行：没有连接真机，模拟器虚拟化受限。页面行距、故事展开／收起、实际公共相册下载与完整回归仍待验收。
 
-**v1.9.15**: build, signature verification, and 16 host-JVM manual-location storage checks passed. UI / download instrumentation compiled but did not run: virtualization permissions blocked the local emulator and no real device was connected. Address editing, real public-gallery exports, and the full regression suite remain unverified for this version. Previous-version test counts are not treated as this version's results.
+**v1.9.16**: build, signature verification, 45 host-JVM layout checks and 16 place-storage checks passed. Actual UI/PNG instrumentation compiled but did not run: no real device is connected and emulator virtualization is unavailable. On-device spacing, story expansion/collapse, public-gallery downloads and full regression remain unverified.
 
-见 / See [app/测试记录-v1.9.15.md](app/测试记录-v1.9.15.md).
+见 / See [app/测试记录-v1.9.16.md](app/测试记录-v1.9.16.md).
 
 ## 许可 / License
 

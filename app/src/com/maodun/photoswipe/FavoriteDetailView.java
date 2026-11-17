@@ -19,7 +19,8 @@ final class FavoriteDetailView extends LinearLayout {
     private final MainActivity.PhotoItem item;
     private final SharedPreferences prefs;
     private final float density;
-    private final TextView date,place,count,status;
+    private final TextView date,place,count,status,storyEntry;
+    private final LinearLayout storyPanel;
     private final EditText story;
     private final ZoomPhotoView photo;
     private String dateValue="时间读取中…",placeValue="地点读取中…";
@@ -35,18 +36,28 @@ final class FavoriteDetailView extends LinearLayout {
         View save=new DownloadButton(c);nav.addView(save,new LayoutParams(dp(48),dp(48)));back.setOnClickListener(v->{persist();close.run();});save.setOnClickListener(v->savePage());
         LinearLayout paper=new LinearLayout(c);paper.setOrientation(VERTICAL);paper.setPadding(dp(14),dp(14),dp(14),dp(12));paper.setBackground(paperBackground());paper.setElevation(dp(4));addView(paper,new LayoutParams(-1,0,1));
         photo=new ZoomPhotoView(c);paper.addView(photo,new LayoutParams(-1,0,1));
-        date=text(dateValue,11,0xFF78674F);place=text(placeValue,11,0xFF78674F);date.setPadding(0,dp(10),0,dp(3));paper.addView(date);paper.addView(place,new LayoutParams(-1,-2));place.setMinHeight(dp(32));place.setGravity(Gravity.CENTER_VERTICAL);place.setOnClickListener(v->{if(manualPlace)editPlace();else if(c instanceof MainActivity)((MainActivity)c).requestPhotoLocation();});
-        View line=new View(c);line.setBackgroundColor(0xFFDDCFB4);LayoutParams lp=new LayoutParams(-1,dp(1));lp.topMargin=dp(12);paper.addView(line,lp);
-        story=new EditText(c);story.setTextColor(0xFF514332);story.setTextSize(14);story.setHintTextColor(0xFFA49275);story.setHint(MemoryNotes.HINT);story.setBackgroundColor(Color.TRANSPARENT);story.setPadding(0,dp(12),0,dp(3));story.setMaxLines(3);story.setMinLines(2);
+        date=text(dateValue,11,0xFF78674F);place=text(placeValue,11,0xFF78674F);
+        date.setPadding(0,0,0,0);place.setPadding(0,0,0,0);
+        date.setLineSpacing(dp(4),1f);place.setLineSpacing(dp(4),1f);
+        LayoutParams dateLp=new LayoutParams(-1,-2);dateLp.topMargin=dp(10);dateLp.bottomMargin=dp(4);
+        paper.addView(date,dateLp);paper.addView(place,new LayoutParams(-1,-2));
+        place.setOnClickListener(v->{if(manualPlace)editPlace();else if(c instanceof MainActivity)((MainActivity)c).requestPhotoLocation();});
+        // No empty editing box inside the paper; filled stories retain their place on the paper.
+        storyPanel=new LinearLayout(c);storyPanel.setOrientation(VERTICAL);storyPanel.setPadding(0,dp(8),0,0);paper.addView(storyPanel,new LayoutParams(-1,-2));
+        storyEntry=text(MemoryNotes.HINT,12,light?0xFF80725F:0xFFB2A28A);storyEntry.setPadding(dp(4),dp(7),dp(4),dp(7));storyEntry.setContentDescription("点击记录你的独家记忆");addView(storyEntry,new LayoutParams(-1,-2));
+        story=new EditText(c);story.setTextColor(0xFF514332);story.setTextSize(14);story.setHintTextColor(0xFFA49275);story.setHint(MemoryNotes.HINT);story.setBackgroundColor(Color.TRANSPARENT);story.setPadding(0,dp(5),0,dp(5));story.setMaxLines(3);story.setMinLines(1);
         story.setFilters(new InputFilter[]{(source,start,end,dest,dstart,dend)->{
             String before=dest.subSequence(0,dstart).toString(),after=dest.subSequence(dend,dest.length()).toString();int remain=40-before.codePointCount(0,before.length())-after.codePointCount(0,after.length());String incoming=source.subSequence(start,end).toString();return incoming.codePointCount(0,incoming.length())>remain?MemoryNotes.first(incoming,Math.max(0,remain)):null;
-        }});story.setText(MemoryNotes.get(prefs,item.identity()));paper.addView(story,new LayoutParams(-1,-2));
-        count=text("",10,0xFF9B896C);count.setGravity(Gravity.RIGHT);paper.addView(count);updateCount();
+        }});story.setText(MemoryNotes.get(prefs,item.identity()));storyPanel.addView(story,new LayoutParams(-1,-2));
+        count=text("",10,0xFF9B896C);count.setGravity(Gravity.RIGHT);storyPanel.addView(count);updateCount();
+        story.setOnFocusChangeListener((v,focused)->updateCount());
+        storyEntry.setOnClickListener(v->{storyPanel.setVisibility(View.VISIBLE);story.setVisibility(View.VISIBLE);story.requestFocus();((android.view.inputmethod.InputMethodManager)c.getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(story,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);});
         story.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int n,int f){}public void onTextChanged(CharSequence s,int a,int b,int n){updateCount();persist();}public void afterTextChanged(Editable e){}});
         status=text("文字自动保存 · 双指放大查看",10,light?0xFF80725F:0xFFB2A28A);status.setPadding(0,dp(8),0,dp(7));addView(status);
         LinearLayout actions=new LinearLayout(c);addView(actions,new LayoutParams(-1,dp(43)));
         TextView unstar=button("取消收藏"),open=button("在系统相册打开");actions.addView(unstar,new LayoutParams(0,-1,1));LayoutParams op=new LayoutParams(0,-1,1);op.leftMargin=dp(8);actions.addView(open,op);
         unstar.setOnClickListener(v->new AlertDialog.Builder(c).setTitle("取消这张收藏？").setMessage("原照片不会删除。").setNegativeButton("取消",null).setPositiveButton("取消收藏",(d,w)->{persist();remove.run();}).show());
+        setFocusableInTouchMode(true);requestFocus();
         open.setOnClickListener(v->{try{c.startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(item.uri,"image/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));}catch(Exception e){Toast.makeText(c,"原照片暂不可打开",Toast.LENGTH_SHORT).show();}});
     }
     private final class DownloadButton extends View {
@@ -59,7 +70,7 @@ final class FavoriteDetailView extends LinearLayout {
     private TextView text(String s,int size,int color){TextView t=new TextView(getContext());t.setText(s);t.setTextSize(size);t.setTextColor(color);t.setIncludeFontPadding(false);return t;}
     private TextView button(String s){TextView t=text(s,12,0xFF69543B);t.setGravity(Gravity.CENTER);t.setPadding(dp(10),dp(8),dp(10),dp(8));GradientDrawable b=new GradientDrawable();b.setColor(0xFFEDE2CD);b.setCornerRadius(dp(19));t.setBackground(b);return t;}
     private GradientDrawable paperBackground(){GradientDrawable b=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xFFD1C1A3,0xFFF9F3E5,0xFFF3E8D3});b.setCornerRadius(dp(4));b.setStroke(dp(1),0xFFCCB993);return b;}
-    private void updateCount(){String s=story.getText().toString();count.setText(s.codePointCount(0,s.length())+" / 40");}
+    private void updateCount(){String s=story.getText().toString();count.setText(s.codePointCount(0,s.length())+" / 40");boolean expanded=story.hasFocus()||MemoryLayout.hasStory(s);story.setMinLines(story.hasFocus()?2:1);count.setVisibility(expanded?View.VISIBLE:View.GONE);storyPanel.setVisibility(expanded?View.VISIBLE:View.GONE);storyEntry.setVisibility(expanded?View.GONE:View.VISIBLE);}
     private void persist(){MemoryNotes.save(prefs,item.identity(),story.getText().toString());changed.run();}
     void content(Bitmap b,String time,String location){content(b,time,location,false);}
     void content(Bitmap b,String time,String location,boolean editable){
@@ -68,7 +79,7 @@ final class FavoriteDetailView extends LinearLayout {
         placeValue=editable?MemoryNotes.getPlace(prefs,item.identity()):location;showPlace();
     }
     private void showPlace(){
-        place.setText(manualPlace?(placeValue.isEmpty()?"地点未填写 · 点击填写地点":placeValue):placeValue);
+        place.setText(manualPlace?(placeValue.isEmpty()?"地点未填写 · 点击填写地点":placeValue):MemoryLayout.locationLines(placeValue));
         place.setContentDescription(manualPlace?"编辑地点，"+(placeValue.isEmpty()?"未填写":placeValue):placeValue);
     }
     private void editPlace(){
@@ -99,6 +110,7 @@ final class FavoriteDetailView extends LinearLayout {
         if(exporting)return;
         if(photo.image()==null){Toast.makeText(getContext(),"照片尚未读取完成",Toast.LENGTH_SHORT).show();return;}
         if(!metadataReady){Toast.makeText(getContext(),"时间地点正在读取，请稍后保存",Toast.LENGTH_SHORT).show();return;}
+        requestFocus();((android.view.inputmethod.InputMethodManager)getContext().getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(story.getWindowToken(),0);updateCount();
         persist();final String note=story.getText().toString().trim(),when=dateValue,where=placeValue;final Bitmap original=photo.image();exporting=true;status.setText("正在保存…");
         new Thread(()->{
             Uri uri=null;File legacyFile=null;Bitmap output=null;boolean ok=false;
@@ -117,16 +129,16 @@ final class FavoriteDetailView extends LinearLayout {
     static Bitmap renderExport(Bitmap image,String time,String place,String story){
         int width=1080,pad=66;float fit=Math.min((width-pad*2f)/image.getWidth(),1400f/image.getHeight());int imageH=Math.round(image.getHeight()*fit);
         TextPaint tp=new TextPaint(Paint.ANTI_ALIAS_FLAG);tp.setColor(0xFF756249);tp.setTextSize(29);
-        StaticLayout where=place==null||place.trim().isEmpty()?null:new StaticLayout(place,tp,width-pad*2,Layout.Alignment.ALIGN_NORMAL,1.15f,0,false);
-        int placeHeight=where==null?0:where.getHeight();
+        // One text layout gives time, place and coordinates an identical baseline pitch.
+        StaticLayout metadata=new StaticLayout(MemoryLayout.metadata(time,place),tp,width-pad*2,Layout.Alignment.ALIGN_NORMAL,1f,12f,false);
+        String note=story==null?"":story.trim();
         TextPaint notePaint=new TextPaint(tp);notePaint.setTextSize(39);notePaint.setColor(0xFF54442F);
-        StaticLayout memory=new StaticLayout(story,notePaint,width-pad*2,Layout.Alignment.ALIGN_NORMAL,1.25f,0,false);
-        int h=pad+imageH+40+40+placeHeight+(where==null?16:36)+(story.isEmpty()?0:memory.getHeight()+28)+pad;
+        StaticLayout memory=note.isEmpty()?null:new StaticLayout(note,notePaint,width-pad*2,Layout.Alignment.ALIGN_NORMAL,1.25f,0,false);
+        int h=MemoryLayout.exportHeight(imageH,metadata.getHeight(),memory==null?0:memory.getHeight());
         Bitmap output=Bitmap.createBitmap(width,h,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(output);Paint p=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
         c.drawColor(0xFFC5B392);p.setColor(0xFFF5ECD9);c.drawRect(18,18,width-18,h-18,p);p.setColor(0x30735A36);p.setStrokeWidth(1);for(int y=20;y<h-20;y+=12)c.drawLine(20,y,width-20,y,p);
         float iw=image.getWidth()*fit;RectF dst=new RectF((width-iw)/2,pad,(width+iw)/2,pad+imageH);p.setShadowLayer(9,0,5,0x40000000);p.setColor(0xFFFFFCF4);c.drawRect(dst.left-15,dst.top-15,dst.right+15,dst.bottom+15,p);p.clearShadowLayer();c.drawBitmap(image,null,dst,p);
-        int y=pad+imageH+52;c.drawText(time,pad,y,tp);y+=20;
-        if(where!=null){c.save();c.translate(pad,y);where.draw(c);c.restore();y+=placeHeight+34;}else y+=14;
-        if(!story.isEmpty()){p.setColor(0xFFCCBA99);c.drawRect(pad,y,width-pad,y+2,p);y+=25;c.save();c.translate(pad,y);memory.draw(c);c.restore();}return output;
+        int y=pad+imageH+30;c.save();c.translate(pad,y);metadata.draw(c);c.restore();y+=metadata.getHeight();
+        if(memory!=null){y+=20;p.setColor(0xFFCCBA99);c.drawRect(pad,y,width-pad,y+2,p);y+=22;c.save();c.translate(pad,y);memory.draw(c);c.restore();}return output;
     }
 }
