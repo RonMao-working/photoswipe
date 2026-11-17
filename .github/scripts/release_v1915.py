@@ -45,14 +45,26 @@ def main():
     notes = Path('docs/release-notes-v1.9.15.md').read_text(encoding='utf-8')
     base = '/repos/' + REPO + '/releases'
     print('Stage: check existing release', flush=True)
-    release = request('GET', base + '/tags/' + TAG)
-    if release is not None:
-        raise SystemExit('A release already exists; it has not been overwritten.')
-    print('Stage: create draft release', flush=True)
-    release = request('POST', base, {'tag_name': TAG, 'target_commitish': os.environ['GITHUB_SHA'],
-                                   'name': '相册滑选 v1.9.15', 'body': notes, 'draft': True, 'prerelease': False})
-    upload = release['upload_url'].split('{', 1)[0] + '?' + urllib.parse.urlencode({'name': NAME})
-    asset = request('POST', upload, apk, binary=True)
+    releases = request('GET', base + '?per_page=100') or []
+    release = next((r for r in releases if r.get('tag_name') == TAG), None)
+    if release is not None and not release.get('draft'):
+        expected = next((a for a in release.get('assets', []) if a.get('name') == NAME), None)
+        if expected and expected.get('size') == SIZE and expected.get('digest') == 'sha256:' + SHA256:
+            print('Release already verified:', release['html_url']);return
+        raise SystemExit('A published release already exists; it has not been overwritten.')
+    if release is None:
+        print('Stage: create draft release', flush=True)
+        release = request('POST', base, {'tag_name': TAG, 'target_commitish': os.environ['GITHUB_SHA'],
+                                       'name': '相册滑选 v1.9.15', 'body': notes, 'draft': True, 'prerelease': False})
+    existing = next((a for a in release.get('assets', []) if a.get('name') == NAME), None)
+    if existing:
+        if existing.get('size') != SIZE or existing.get('digest') != 'sha256:' + SHA256:
+            raise SystemExit('Draft contains an unexpected asset; it has not been replaced.')
+        asset = existing
+    else:
+        print('Stage: upload APK', flush=True)
+        upload = release['upload_url'].split('{', 1)[0] + '?' + urllib.parse.urlencode({'name': NAME})
+        asset = request('POST', upload, apk, binary=True)
     if asset.get('name') != NAME or asset.get('size') != SIZE or asset.get('state') != 'uploaded':
         raise SystemExit('Upload verification failed; release remains a draft.')
     digest = asset.get('digest')
@@ -69,7 +81,7 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except Exception as error:
+    except (Exception, SystemExit) as error:
         message = (type(error).__name__ + ': ' + str(error)).replace(os.environ.get('GITHUB_TOKEN', 'NO_TOKEN'), '[redacted]')
         print('::error::' + message.replace('\n', ' ').replace('\r', ' '), flush=True)
         raise SystemExit(1)
