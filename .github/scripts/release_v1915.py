@@ -61,16 +61,17 @@ def main():
         print('Stage: create draft release', flush=True)
         release = request('POST', base, {'tag_name': TAG, 'target_commitish': os.environ['GITHUB_SHA'],
                                        'name': '相册滑选 v1.9.15', 'body': notes, 'draft': True, 'prerelease': False})
-    existing = next((a for a in release.get('assets', []) if a.get('name') == NAME), None)
+    assets = request('GET', base + '/' + str(release['id']) + '/assets') or []
+    existing = next((a for a in assets if a.get('size') == SIZE and a.get('digest') == 'sha256:' + SHA256), None)
     if existing:
-        if existing.get('size') != SIZE or existing.get('digest') != 'sha256:' + SHA256:
-            raise SystemExit('Draft contains an unexpected asset; it has not been replaced.')
         asset = existing
     else:
+        if assets:
+            raise SystemExit('Draft assets do not match the verified APK: ' + json.dumps([{k:a.get(k) for k in ('name','size','digest','state')} for a in assets], ensure_ascii=False))
         print('Stage: upload APK', flush=True)
-        upload = release['upload_url'].split('{', 1)[0] + '?' + urllib.parse.urlencode({'name': NAME})
+        upload = release['upload_url'].split('{', 1)[0] + '?' + urllib.parse.urlencode({'name': 'photoswipe-v1.9.15.apk'})
         asset = request('POST', upload, apk, binary=True)
-    if asset.get('name') != NAME or asset.get('size') != SIZE or asset.get('state') != 'uploaded':
+    if asset.get('size') != SIZE or asset.get('state') != 'uploaded':
         raise SystemExit('Upload verification failed; release remains a draft.')
     digest = asset.get('digest')
     if digest and digest != 'sha256:' + SHA256:
