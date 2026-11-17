@@ -50,8 +50,9 @@ def main():
     notes = Path('docs/release-notes-v1.9.15.md').read_text(encoding='utf-8')
     base = '/repos/' + REPO + '/releases'
     print('Stage: check existing release', flush=True)
+    published = request('GET', base + '/tags/' + TAG)
     releases = request('GET', base + '?per_page=100') or []
-    release = next((r for r in releases if r.get('tag_name') == TAG), None)
+    release = published if published is not None else next((r for r in releases if r.get('tag_name') == TAG), None)
     if release is not None and not release.get('draft'):
         expected = next((a for a in release.get('assets', []) if a.get('size') == SIZE and a.get('digest') == 'sha256:' + SHA256), None)
         if expected:
