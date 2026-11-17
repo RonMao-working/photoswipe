@@ -35,7 +35,12 @@ def main():
         except urllib.error.HTTPError as error:
             if error.code == 404 and method == 'GET':
                 return None
-            raise RuntimeError('GitHub API request failed: HTTP ' + str(error.code)) from None
+            try:
+                details = json.loads(error.read().decode('utf-8'))
+                safe = {'message': details.get('message'), 'errors': details.get('errors')}
+            except Exception:
+                safe = {}
+            raise RuntimeError('GitHub API ' + method + ' ' + ('asset-upload' if binary else path) + ' failed: HTTP ' + str(error.code) + ' ' + json.dumps(safe, ensure_ascii=False)) from None
 
     # Read the exact delivered APK from the repository; no external storage dependency.
     print('Stage: verify repository APK', flush=True)
