@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import urllib.error
 import urllib.request
+import urllib.parse
 
 REPO = 'RonMao-working/photoswipe'
 TAG = 'v1.9.15'
@@ -18,7 +19,7 @@ API = 'https://api.github.com'
 
 
 def main():
-    if os.environ.get('GITHUB_REPOSITORY') != REPO or os.environ.get('GITHUB_REF') != 'refs/tags/' + TAG:
+    if os.environ.get('GITHUB_REPOSITORY') != REPO or os.environ.get('GITHUB_REF') not in ('refs/tags/' + TAG, 'refs/heads/main'):
         raise SystemExit('Unexpected repository or ref; nothing published.')
     token = os.environ['GITHUB_TOKEN']
     def request(method, path, data=None, binary=False):
@@ -48,7 +49,6 @@ def main():
         raise SystemExit('A release already exists; it has not been overwritten.')
     release = request('POST', base, {'tag_name': TAG, 'target_commitish': os.environ['GITHUB_SHA'],
                                    'name': '相册滑选 v1.9.15', 'body': notes, 'draft': True, 'prerelease': False})
-    import urllib.parse
     upload = release['upload_url'].split('{', 1)[0] + '?' + urllib.parse.urlencode({'name': NAME})
     asset = request('POST', upload, apk, binary=True)
     if asset.get('name') != NAME or asset.get('size') != SIZE or asset.get('state') != 'uploaded':

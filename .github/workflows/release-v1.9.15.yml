@@ -1,6 +1,10 @@
 name: Publish v1.9.15 APK
 on:
   push:
+    branches:
+      - main
+    paths:
+      - .github/scripts/release_v1915.py
     tags:
       - v1.9.15
 permissions:
