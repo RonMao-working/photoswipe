@@ -6,8 +6,8 @@ set -e
 
 # ---- 版本信息：改这里即可，包的版本号与文件名随之变化 ----
 # v1.x 单机；v2.x 留给未来联网功能。versionCode 只递增以支持覆盖安装。
-VERSION_CODE=26
-VERSION_NAME=1.9.16
+VERSION_CODE=27
+VERSION_NAME=1.9.17
 
 SDK="$HOME/android-dev/sdk"
 JDK="$HOME/android-dev/jdk/Contents/Home"
@@ -15,7 +15,7 @@ BT="$SDK/build-tools/34.0.0"
 PLAT="$SDK/platforms/android-34/android.jar"
 PROJ="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$PROJ/.." && pwd)"
-OUT="$ROOT/安装包/相册滑选-v$VERSION_NAME.apk"
+OUT="$ROOT/安装包/相册滑选-单机版-v$VERSION_NAME.apk"
 
 export JAVA_HOME="$JDK"
 export PATH="$JDK/bin:$PATH"

@@ -1667,7 +1667,7 @@ public class MainActivity extends Activity {
 
         TextView head = label("左右滑动的含义", 13f, C_DIM, false);
         try {
-            TextView version = label("相册滑选 v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName + " · 单机模式 · 开发者：RonMao", 11f, C_FAINT, false);
+            TextView version = label("相册滑选（单机版） v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName + " · 单机模式 · 开发者：RonMao", 11f, C_FAINT, false);
             version.setPadding(0, 0, 0, dp(10)); col.addView(version);
         } catch (Exception ignored) { }
         col.addView(head);
